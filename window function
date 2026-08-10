@@ -1,0 +1,376 @@
+create database window10db;
+
+use window10db;
+create table employee(id int,name varchar(20),dept varchar(20), salary int);
+
+insert into employee values(1,'a','hr',100),(2,'b','hr',200),(3,'c','markt',300),(4,'d','markt',400),(5,'e','hr',500);
+use window10db;
+CREATE TABLE employee_sales (
+    sale_id INT PRIMARY KEY,
+    employee_name VARCHAR(50),
+    department VARCHAR(50),
+    sale_date DATE,
+    sales_amount DECIMAL(10,2)
+);
+
+
+
+INSERT INTO employee_sales
+    (sale_id, employee_name, department, sale_date, sales_amount)
+VALUES
+    (1,  'Alice', 'Electronics', '2026-01-05', 1200.00),
+    (2,  'Bob',   'Electronics', '2026-01-08', 1800.00),
+    (3,  'Alice', 'Electronics', '2026-01-15', 1500.00),
+    (4,  'Charlie','Electronics','2026-01-20', 1800.00),
+    (5,  'Bob',   'Electronics', '2026-01-25', 2200.00),
+
+    (6,  'David', 'Furniture',   '2026-01-03', 2500.00),
+    (7,  'Emma',  'Furniture',   '2026-01-10', 1800.00),
+    (8,  'David', 'Furniture',   '2026-01-18', 3000.00),
+    (9,  'Frank', 'Furniture',   '2026-01-22', 1800.00),
+    (10, 'Emma',  'Furniture',   '2026-01-28', 3200.00),
+
+    (11, 'George','Clothing',    '2026-01-04', 900.00),
+    (12, 'Helen', 'Clothing',    '2026-01-09', 1400.00),
+    (13, 'George','Clothing',    '2026-01-16', 1100.00),
+    (14, 'Helen', 'Clothing',    '2026-01-21', 1400.00),
+    (15, 'Ian',   'Clothing',    '2026-01-27', 2000.00);
+
+select sum(salary) from employee;-- aggregate
+select dept,sum(salary) from employee; -- error (without grp by koi aur column select ni ho skta )
+
+select dept,sum(salary) from employee group by dept; -- total salary by dept
+select dept,name,sum(salary) from employee group by dept;-- name is not in group by
+
+
+
+select *,sum(salary) over()  from employee;
+select *,sum(salary) over() ,max(salary) over() from employee;
+
+select *,sum(salary) over(),sum(salary) over()-salary as diff  from employee;
+
+select *,sum(salary) over(),sum(salary) over(partition by dept)  from employee;
+
+
+select *,sum(salary) over(),sum(salary) over(partition by name)  from employee;
+
+
+select employee_name,department,sales_amount,sum(sales_amount) over( partition by department) from employee_sales;
+
+
+select employee_name,department,sales_amount,sum(sales_amount) over( partition by employee_name) from employee_sales;
+
+select employee_name,department,sales_amount,round(avg(sales_amount) over( partition by department)) as avg
+,round(sales_amount-avg(sales_amount) over( partition by department)) as diff from employee_sales;
+
+
+
+/*q.10 in recording select distinct(department),sum(sales_amount) over(partition by department),sum(sales_amount) over() from employee_sales;
+
+SELECT
+    department,
+    SUM(sales_amount) AS department_sales,
+
+    SUM(sales_amount) * 100.0
+        / SUM(SUM(sales_amount)) OVER () AS sales_percentage
+
+FROM employee_sales
+GROUP BY department;*/
+SELECT
+    department,
+    SUM(sales_amount) AS department_sales,
+    SUM(SUM(sales_amount)) OVER () AS overall_sales,
+    SUM(sales_amount) * 100.0
+        / SUM(SUM(sales_amount)) OVER () AS sales_percentage
+FROM employee_sales
+GROUP BY department;
+
+select department,sum(sales_amount) from employee_sales group by department;
+select  distinct department,sum(sales_amount) over(partition by department) from employee_sales;
+select*from employee_sales;
+
+
+
+
+
+On Mon, Aug 10, 2026 at 11:48 AM deepanshu sharma <sharmadeepanshu618@gmail.com> wrote:
+-- 5aug test and mock
+-- 6aug revise corelated sub.alter
+-- foregin key samjhaya
+-- dml mai delet sikhaya
+
+
+create database foreigndb;
+
+use foreigndb;
+
+
+CREATE TABLE customers (
+    customer_id INT PRIMARY KEY,
+    customer_name VARCHAR(50)
+);
+
+INSERT INTO customers VALUES
+(101,'John'),
+(102,'Alice'),
+(103,'David');
+
+
+CREATE TABLE products (
+    product_id INT PRIMARY KEY,
+    product_name VARCHAR(50)
+);
+
+INSERT INTO products VALUES
+(1,'Laptop'),
+(2,'Mouse'),
+(3,'Keyboard');
+
+
+
+CREATE TABLE orders (
+    order_id INT PRIMARY KEY,
+    customer_id INT, -- foreign key
+    product_id INT,
+    quantity INT,
+    constraint customer_id_fk foreign key(customer_id) references customers (customer_id)
+    on delete cascade,
+   
+    constraint product_Id_ffk foreign key(product_id) references products (prodect_id)
+);
+
+desc orders;
+
+INSERT INTO orders
+VALUES
+(1,101,1,2);
+
+INSERT INTO orders
+VALUES
+(2,999,1,1);
+
+
+
+-- we do join. [Wrong name]
+SELECT *
+FROM orders o
+LEFT JOIN customers c
+ON o.customer_id=c.customer_id;
+
+
+
+INSERT INTO orders
+VALUES
+(3,101,500,1);
+
+-- wrong can't order if the product is not listed
+SELECT *
+FROM orders o
+LEFT JOIN products p
+ON o.product_id=p.product_id;
+
+
+
+
+-- ----------- $$$$$$$$ ------
+
+CREATE TABLE customers (
+    customer_id INT PRIMARY KEY,
+    customer_name VARCHAR(50)
+);
+
+
+CREATE TABLE products (
+    product_id INT PRIMARY KEY,
+    product_name VARCHAR(50)
+);
+
+
+
+/*
+create table child_table(
+   column1 data_type,
+   column2,data_type,
+   ...
+   constraint FK_Orders_Customers FOREIGN KEY (CustomerID) REFERENCES Customers(CustomerID)
+);
+*/
+delete from customers where customer_id=101;-- parent data delete (child data orders) parent delet krte h to child data v delete  hota h
+select*from customers;
+select*from orders;
+
+
+
+On Sat, Aug 1, 2026 at 3:46 PM deepanshu sharma <sharmadeepanshu618@gmail.com> wrote:
+-- 31july-corerelated subquery
+
+
+use corr_db;
+create table orders1 (order_id int,name varchar(20),amount int);
+insert into orders1 values (1,'a',100),(2,'a',200),(3,'a',300),(4,'d',400);
+insert into orders1 values (5,'d',300);
+select * from orders1;
+show tables;
+describe orders1;
+select order_id,name,amount from orders1 where name='a' and amount=(select max(amount) from orders1 where name='a');
+
+select order_id,name,amount from orders1 as o_outer where amount=(select max(amount) from orders1 where name=o_outer.name);
+
+
+
+
+
+
+On Thu, Jul 30, 2026 at 12:24 PM deepanshu sharma <sharmadeepanshu618@gmail.com> wrote:
+--
+
+create database test_db;
+use test_db;
+
+CREATE TABLE stations (
+station_id INT PRIMARY KEY,
+station_name VARCHAR(50),
+zone VARCHAR(20),
+capacity INT,
+opened_year INT
+);
+INSERT INTO stations (station_id, station_name, zone, capacity, opened_year) VALUES
+(1, 'Riverside Dock', 'North', 20, 2019),
+(2, 'Amber Plaza', 'Central', 35, 2018),
+(3, 'Kite Hill', 'North', 15, 2021),
+(4, 'Old Mill Yard', 'East', 25, 2017),
+(5, 'Glass Bridge', 'Central', 40, 2020),
+(6, 'Fern Gully', 'West', 12, 2022),
+(7, 'Copper Lane', 'East', 18, 2016),
+(8, 'Willow Bend', 'West', 22, 2023),
+(9, 'Stone Arch', 'South', 30, 2023);
+CREATE TABLE rides (
+ride_id INT PRIMARY KEY,
+station_id INT,
+rider_type VARCHAR(20),
+ride_date DATE,
+duration_min INT,
+distance_km DECIMAL(4,1),
+fare DECIMAL(6,2),
+FOREIGN KEY (station_id) REFERENCES stations(station_id)
+);
+INSERT INTO rides
+(ride_id, station_id, rider_type, ride_date, duration_min, distance_km, fare)
+VALUES
+(1, 1, 'Member', '2024-03-02', 22, 4.2, 3.50),
+(2, 1, 'Casual', '2024-03-05', 45, 7.8, 9.75),
+(3, 2, 'Member', '2024-03-05', 18, 3.1, 2.80),
+(4, 2, 'Student', '2024-03-11', 33, 6.0, 4.20),
+(5, 3, 'Casual', '2024-03-14', 12, 1.9, 2.10),
+(6, 1, 'Member', '2024-04-01', 27, 5.4, 4.10),
+(7, 4, 'Student', '2024-04-03', 55, 9.5, 6.30),
+(8, 5, 'Member', '2024-04-07', 15, 2.6, 2.40),
+(9, 5, 'Casual', '2024-04-09', 62, 11.2, 13.50),
+(10, 2, 'Member', '2024-04-12', 24, 4.8, 3.90),
+(11, 6, 'Student', '2024-04-18', 40, 7.1, 5.00),
+(12, 3, 'Member', '2024-05-02', 19, 3.3, 2.95),
+(13, 7, 'Casual', '2024-05-04', 50, 8.9, 11.00),
+(14, 5, 'Student', '2024-05-08', 29, 5.2, 3.75),
+(15, 1, 'Casual', '2024-05-13', 36, 6.4, 8.20),
+(16, 4, 'Member', '2024-05-15', 21, 4.0, 3.30),
+(17, 2, 'Casual', '2024-05-19', 48, 8.1, 10.40),
+(18, 6, 'Member', '2024-05-22', 17, 2.9, 2.55),
+(19, 5, 'Member', '2024-06-01', 31, 6.7, 4.60),
+(20, 7, 'Student', '2024-06-04', 44, 7.6, 5.40),
+(21, 1, 'Student', '2024-06-09', 26, 4.9, 3.60),
+(22, 3, 'Casual', '2024-06-11', 58, 10.3, 12.25),
+(23, 4, 'Casual', '2024-06-15', 39, 6.8, 8.60),
+(24, 2, 'Member', '2024-06-20', 23, 4.4, 3.70),
+(25, 5, 'Casual', '2024-06-25', 53, 9.7, 12.80);
+
+show tables;
+describe rides;
+
+-- 1.From the rides table, show each rider_type along with the total number of rides taken and the total fare collected.
+-- Include only those rider types that have taken more than 7 rides. Name the output columns rider_type, total_rides
+-- and total_fare, and sort the result by total_fare in descending order.
+
+select rider_type,count(ride_id) as total_rides,round( sum(fare),2 ) as total_fare
+from rides group by rider_type
+having count(ride_id) > 7
+order by total_fare desc;
+
+-- 2.For every station_id in the rides table, display the number of rides and the average ride duration rounded to 2
+-- decimal places. Show only those stations whose average duration is greater than 30 minutes. Name the output
+-- columns station_id, ride_count and avg_duration, and sort the result by avg_duration in descending order.
+select station_id,count(ride_id) as ride_count,round(avg(duration_min),2) as avg_duration from rides
+group by station_id
+having (avg(duration_min)) >30 order by avg_duration desc;
+-- or(join ki jarurat ni hai qki ek table ke he output maang ra h
+select s.station_id,count(ride_id) as ride_count,round(avg(duration_min),2) as avg_duration from stations s  join rides r
+on s.station_id=r.station_id
+group by station_id
+having (avg(duration_min)) >30 order by avg_duration desc;
+
+-- 3.Group the rides by the month of ride_date and display the month number, the number of rides in that month, and
+-- the total distance covered rounded to 1 decimal place. Show only the months where the total distance is greater than
+-- 30 km. Name the output columns ride_month, total_rides and total_distance, and sort by ride_month in ascending order.
+
+select month(ride_date) as ride_month, count(*) as total_rides,round(sum(distance_km),1) as total_distance from rides
+group by ride_month
+having total_distance >30
+order by ride_month;
+
+-- 4.For each rider_type, display the longest ride duration, the shortest ride duration and the average ride duration
+-- rounded to 2 decimal places. Include only those rider types whose longest ride is 50 minutes or more. Name the
+-- output columns rider_type, longest_ride, shortest_ride and avg_ride, and sort by longest_ride in descending order.
+
+select rider_type,max(duration_min) as longest_ride,min(duration_min) as shortest_ride,round(avg(duration_min),2) as avg_ride
+from rides group by rider_type
+having longest_ride>50
+order by longest_ride desc;
+
+-- 5.Group the rides by station_id and rider_type together. For each combination, display the number of rides and the
+-- total distance rounded to 1 decimal place. Show only the combinations where the total distance is greater than 10
+-- km. Name the output columns station_id, rider_type, ride_count and total_distance, and sort by station_id in ascending order.
+
+select station_id,rider_type,count(*) as ride_count,round(sum(distance_km),1) as total_distance from rides  group by  station_id,rider_type
+having total_distance>10
+order by station_id;
+
+-- 6.Find the stations that have been used by all three rider types (Member, Casual and Student). For each such station
+-- display the number of distinct rider types, the total number of rides and the average fare rounded to 2 decimal
+-- places. Name the output columns station_id, rider_type_count, total_rides and avg_fare, and sort by station_id in ascending order.
+
+select station_id, count(distinct rider_type) as rider_count_type, count(ride_id) as total_rides,round(avg(fare),2) as avg_fare from rides
+group by station_id
+HAVING COUNT(DISTINCT rider_type) = 3
+order by station_id;
+
+-- 7.List every station in the stations table along with the details of its June 2024 rides — ride_id, rider_type and fare.
+-- Stations that had no ride in June 2024 must still appear in the result with NULL values in the ride columns. Name the
+-- output columns station_id, station_name, zone, ride_id, rider_type and fare, and sort by station_id and then ride_id
+
+select s.station_id,s.station_name,s.zone,r.ride_id,r.rider_type,r.fare from stations s left join rides r on s.station_id=r.station_id
+and month(ride_date)=6 and year(ride_date)=2024
+group by station_id,ride_id
+order by station_id,ride_id;
+           -- 2 method
+select s.station_id,s.station_name,s.zone,r.ride_id,r.rider_type,r.fare from stations s left join rides r on s.station_id=r.station_id
+and ride_date between '2024-06-30' and '2024-06-01'
+group by station_id,ride_id
+order by station_id,ride_id;
+
+-- 8.Produce a station-wise summary showing station_id, station_name, zone, the total number of rides started at that
+-- station and the total revenue collected. Every station must appear in the result — stations with no rides should show
+-- 0 rides and 0.00 revenue instead of NULL. Name the output columns station_id, station_name, zone, total_rides and
+-- total_revenue, and sort by total_rides in descending order, then by station_id in ascending order.
+
+select s.station_id,s.station_name,s.zone,count(*) as total_ride,ifnull(sum(fare),0) as total_revenue from stations s left join rides r on s.station_id=r.station_id
+group by s.station_id,s.station_name
+order by total_ride desc,s.station_id;
+
+
+
+
+
+
+
+
+
+
