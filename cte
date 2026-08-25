@@ -1,0 +1,49 @@
+-- cte
+use viewdb2;
+-- ctas =crete table as select statement
+create table city_t2 as select * from world.city;
+
+select * from city_t2;
+select * from city_t2 where countrycode='afg' and name like '%a%';
+
+
+with abc as
+(select * from city_t2 where countrycode='afg' and name like '%a%')
+select countrycode,sum(population) from abc group by countrycode;
+
+
+select * from city_t2;-- countrycode
+select * from world.country;-- code
+
+select c.name,c.countrycode,c.district,cn.code,cn.name,cn.continent
+from city_t2 as c
+join world.country as cn
+on c.countrycode=cn.code;
+
+select c.name,c.countrycode,c.district,cn.code,cn.name,cn.continent,cn.population
+from city_t2 as c
+join world.country as cn
+on c.countrycode=cn.code
+where cn.continent='asia' and cn.population>400000;
+
+
+with cte as
+(select c.name as city,c.countrycode,c.district,c.population as citypop,cn.code as country,cn.name,cn.continent,cn.population
+from city_t2 as c
+join world.country as cn
+on c.countrycode=cn.code
+where cn.continent='asia' and cn.population>400000)
+select * from city_t2;
+
+select*from city_t2 as c where population=(select max(population) from city_t2 where district=c.district);
+
+
+with district_max as ( select district,max(population) as d_population
+from city_t2
+group by district)
+select * from district_max  as dm join city_t2  as c on c.district=dm.district and c.population=dm.d_population;
+
+with cte as(
+select max(population) from city_t2 where population <(select max(population) from city_t2))
+,cte2 as(select max(population) from city_t2 where population<(select * from cte))
+select *from city_t2 where population=(select * from cte2);
